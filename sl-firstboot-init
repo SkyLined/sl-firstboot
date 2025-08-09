@@ -1,0 +1,59 @@
+#!/bin/bash
+### Fail immediately if any error is unhandled ############################
+set -eou pipefail;
+### Output useful information in case of an error #########################
+function fReportError() {
+  printf "\e[1;31m✘ Error\e[0m on line \e[1;37m%s\e[0m of \e[1;37m%s\e[0m.\n" "${1}" "${BASH_SOURCE[0]}";
+  printf "Failed command: %s\n" "${2}";
+  printf "Dropping into shell, type \"exit\" to shutdown...\n";
+  /bin/bash;
+  shutdown -h now;
+  while :; do
+    sleep 1; # This is just to keep the script running until shutdown.
+  done;
+};
+trap 'fReportError "${LINENO}" "${BASH_COMMAND}"' ERR;
+
+### MAIN ##################################################################
+# Unicode is not available on a Virtual Console in Raspberry Pi, nor are
+# advanced ANSI colors:
+printf "\e[1;37m┌─[ sl-firstboot ]─────────────────────────────────────────────────────────┐\e[0m\n";
+printf "\e[1;36m│   ┬─────┐ ─┬─ ┬────┐ ┌────┐ ┌──┬──┐    ┬─────┐ ┌─────┐ ┌─────┐ ┌──┬──┐   │\e[0m\n";
+printf "\e[0;36m│   ├────    │  ├───┬┘ └────┐    │       ├─────┤ │     │ │     │    │      │\e[0m\n";
+printf "\e[1;34m│   ┴       ─┴─ ┴   ┴  └────┘    ┴       ┴─────┘ └─────┘ └─────┘    ┴      │\e[0m\n";
+printf "\e[1;30m└──────────────────────────────────────────────────────────[ \e[0;37mby \e[1;37mSkyLined\e[1;30m ]─┘\e[0m\n";
+
+[ -d "/boot/firmware" ] && sBootMountPoint="/boot/firmware" || sBootMountPoint="/boot"
+
+${sBootMountPoint}/sl-firstboot-payload;
+# This only executes if the payload script ran successfully.
+
+# Make sure the boot partition is mounted read-write.
+if ! findmnt "${sBootMountPoint}" | grep -q " rw,"; then
+  printf "• Remounting %s as read-write...\n" "${sBootMountPoint}";
+  mount "${sBootMountPoint}" -o remount,rw | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+fi;
+
+# Revert cmdline.txt
+printf "• Reverting ${sBootMountPoint}/cmdline.txt init=... value\n";
+if sed -i 's/ init=.*\? -- \(.\+\)/ init=\1/' "${sBootMountPoint}/cmdline.txt" 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g'; then
+  printf "• Restored original init=... value\n";
+else
+  sed -i 's/ init=.*//' "${sBootMountPoint}/cmdline.txt" 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+  printf "• Removed init=... value\n";
+fi;
+cat "${sBootMountPoint}/cmdline.txt" 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+
+# Remove initialization script
+printf "• Removing ${sBootMountPoint}/sl-firstboot-init...\n";
+rm "${sBootMountPoint}/sl-firstboot-init" 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+
+# Remove payload script
+printf "• Removing ${sBootMountPoint}/sl-firstboot-payload...\n";
+rm "${sBootMountPoint}/sl-firstboot-payload" 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+
+# Write changes to disk.
+sync;
+
+# Exit
+exit 0;

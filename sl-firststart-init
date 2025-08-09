@@ -1,0 +1,82 @@
+#!/bin/bash
+### Fail immediately if any error is unhandled ############################
+set -eou pipefail;
+### Output useful information in case of an error #########################
+function fReportError() {
+  printf "\e[1;31m✘ Error\e[0m on line \e[1;37m%s\e[0m of \e[1;37m%s\e[0m.\n" "${1}" "${BASH_SOURCE[0]}";
+  printf "Failed command: %s\n" "${2}";
+  printf "Dropping into shell, type \"exit\" to shutdown...\n";
+  /bin/bash;
+  shutdown -h now;
+  while :; do
+    sleep 1; # This is just to keep the script running until shutdown.
+  done;
+};
+trap 'fReportError "${LINENO}" "${BASH_COMMAND}"' ERR;
+
+### MAIN ##################################################################
+[ -d "/boot/firmware" ] && sBootMountPoint="/boot/firmware" || sBootMountPoint="/boot"
+
+# Make sure the boot partition is mounted read-write.
+if ! findmnt "${sBootMountPoint}" | grep -q " rw,"; then
+  printf "• Remounting %s as read-write...\n" "${sBootMountPoint}";
+  mount "${sBootMountPoint}" -o remount,rw | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+fi;
+
+# Make sure the root partition is mounted read-write.
+if ! findmnt / | grep -q " rw,"; then
+  printf "• Remounting / as read-write...\n";
+  mount / -o remount,rw | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+fi;
+
+# Move payload script to root parttition
+printf "• Moving sl-firststart-payload to /usr/lib/...\n";
+mv "${sBootMountPoint}/sl-firststart-payload" "/usr/lib/sl-firststart-payload" 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+
+# Create service
+printf "• Creating sl-firststart.service...\n";
+cat <<EOF >> /lib/systemd/system/sl-firststart.service;
+[Unit]
+  Description=sl-firststart service
+  After=network-online.target
+  After=systemd-user-sessions.service
+  Before=lightdm.service
+  Requires=network-online.target
+  Wants=network-online.target
+[Service]
+  Type=oneshot
+  ExecStart=/bin/bash -c "/usr/lib/sl-firststart-payload || /bin/bash"
+  ExecStartPost=/bin/systemctl disable sl-firststart.service
+  ExecStartPost=rm /usr/lib/sl-firststart-payload
+  ExecStartPost=rm /lib/systemd/system/sl-firststart.service
+  StandardInput=tty
+  Restart=on-failure
+  TTYPath=/dev/tty8
+  TTYReset=yes
+  TTYVHangup=yes
+  TTYVTDisallocate=yes
+[Install]
+  WantedBy=multi-user.target
+EOF
+
+# Enable service
+printf "• Enabling sl-firststart.service...\n";
+ln -s /lib/systemd/system/sl-firststart.service \
+  /etc/systemd/system/multi-user.target.wants/sl-firststart.service 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+
+# disable userconf.service
+if [ -f "/etc/systemd/system/multi-user.target.wants/userconfig.service" ]; then
+  printf "• Disabling userconfig.service...\n";
+  rm /etc/systemd/system/multi-user.target.wants/userconfig.service 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+fi;
+
+# Remount root partition as read-only.
+printf "• Remounting / as read-only...\n";
+mount / -o remount,ro 2>&1 | stdbuf -i0 -o0 -e0 sed 's/\(\r\|^\)/\1  /g';
+
+# Write changes to disk.
+sync;
+
+# Exit
+exit 0;
+
