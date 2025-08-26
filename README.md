@@ -113,7 +113,7 @@ When `sl-firstboot-payload` runs, it will:
   1. move `sl-firststart-payload` from the boot partition to `/usr/lib/`
   2. create an `sl-firststart` service,
   3. enable the `sl-firststart` service,
-  4. disable the `userconfig.service` (_see below_).
+  4. disable the `userconfig` service (_see below_).
 
 After this, all changes made by sl-firststart/sl-firstboot to the boot partition
 will be reverted and the system reboots. The root partition will have the
