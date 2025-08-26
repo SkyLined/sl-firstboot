@@ -100,6 +100,7 @@ any issues. The boot partition will not be modified; the next time the system is
 booted the `sl-firstboot-init` script will be run again, and with it your
 payload.
 
+
 ## sl-firststart
 sl-firststart uses sl-firstboot to copy an initialization script
 (`sl-firststart-init`, renamed to `sl-firstboot-payload`) onto the boot
@@ -128,10 +129,16 @@ The `sl-firststart` service will:
   4. disable the `sl-firststart` service,
   5. delete the `sl-firststart` service.
 
-If the payload script fails, the remaining steps are not executed. This means
-the payload script will continue to be run every time the system boots. Once the
-payload script succeeds, the service and script are removed and will no longer
-be executed on start up.
+If the payload script runs successfully, all changes made to the image by
+sl-firststart will be reverted. Any changes made to the image by the payload
+script will remain. The system will continue to boot normally.
+
+If the payload script fails, a root shell will be started to allow you to debug
+any issues. The changes to the boot partition will have been reverted but the
+`sl-firststart` service will still be enabled and the payload script still
+exists. The payload script will continue to be run every time the system boots.
+Once the payload script does succeed, the service and payload script are removed
+and will no longer be executed on start up.
 
 
 ### userconfig.service
