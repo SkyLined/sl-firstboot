@@ -141,8 +141,8 @@ Once the payload script does succeed, the service and payload script are removed
 and will no longer be executed on start up.
 
 
-### userconfig.service
-The `userconfig.service` is disabled by sl-firststart as this is the normal
+### userconfig service
+The `userconfig` service is disabled by sl-firststart as this is the normal
 first start script for Raspbian OS, i.e. the script which asks you to provide a
 username and password once your Raspberry Pi starts for the first time. The
 payload script run through sl-firststart is expected to replace this script,
