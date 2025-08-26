@@ -95,8 +95,8 @@ If the payload script runs successfully, all changes made to the image by
 sl-firstboot will be reverted. Any changes made to the image by the payload
 script will remain. The system will reboot and continue to boot normally.
 
-If the payload fails, a root shell will be started to allow you to debug any
-issues. The boot partition will not be modified; the next time the system is
+If the payload script fails, a root shell will be started to allow you to debug
+any issues. The boot partition will not be modified; the next time the system is
 booted the `sl-firstboot-init` script will be run again, and with it your
 payload.
 
