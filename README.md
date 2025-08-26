@@ -166,6 +166,12 @@ be found.
 
 
 # Questions and Answers
-Q: Does my script need to have unix-style line-breaks?
-A: No, when the script is copied to the image, line-breaks are automatically
-   converted
+> Does my script need to have unix-style line-breaks?
+
+No. When the script is copied to the image, line-breaks are automatically
+converted.
+
+> Is there a Bash script version of this script?
+
+No. Though it is possible to port this script to Bash, I have no need for this
+myself and have no plans to do so at the moment.
