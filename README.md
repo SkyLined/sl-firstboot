@@ -150,7 +150,7 @@ making it obsolete and potentially disruptive, as it uses the same TTY.
 
 
 # dos2unix
-sl-firstboot can *dos2unix.exe* to copy files to the USB drive and make sure
+sl-firstboot can use *dos2unix.exe* to copy files to the USB drive and make sure
 the files have unix-style line-breaks. You can download dos2unix from
 [this page](https://dos2unix.sourceforge.io/#DOS2UNIX) by scrolling down to
 the bottom of the page and looking under the _Ready-to-run-binaries_ heading.
