@@ -83,6 +83,7 @@ When the Raspberry Pi boots up it will:
   2. run `sl-firstboot-init`,
   3. unmount the boot partition,
   4. reboot the system.
+
 When `sl-firstboot-init` runs, it will:
   1. run the payload script,
   2. if this fails, start `/bin/bash` and exit, otherwise
